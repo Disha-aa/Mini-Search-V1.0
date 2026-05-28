@@ -1,0 +1,9 @@
+[2026-05-28 17:45:45] Query: 'hello bro' -> Found: 0 docs, Best score: 11.0%
+[2026-05-28 17:46:01] Query: 'hello' -> Found: 0 docs, Best score: 20.0%
+[2026-05-28 17:46:03] Query: 'python' -> Found: 3 docs, Best score: 100.0%
+[2026-05-28 17:46:06] Query: 'api' -> Found: 3 docs, Best score: 100.0%
+[2026-05-28 17:46:07] Query: 'go' -> Found: 1 docs, Best score: 100.0%
+[2026-05-28 17:46:13] Query: 'pythfgd' -> Found: 0 docs, Best score: 42.0%
+[2026-05-28 17:46:15] Query: 'pythn' -> Found: 3 docs, Best score: 60.0%
+[2026-05-28 17:46:20] Query: 'pynhon' -> Found: 3 docs, Best score: 50.0%
+[2026-05-28 17:46:26] Query: 'asypython' -> Found: 3 docs, Best score: 77.0%

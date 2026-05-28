@@ -1,6 +1,5 @@
 import string
 import collections as col
-from storage import DOCUMENTS
 
 def normalize(text: str) -> str:
     clean_chars = [char.lower() if char not in string.punctuation else ' ' for char in text.strip()]
@@ -43,9 +42,3 @@ def search(query: str, index: dict[str, set[int]], n: int = 3) -> list[dict]:
         score.append({"id": doc_id, "score": percent_score})
 
     return sorted(score, key=lambda item: item['score'], reverse=True)
-
-norm = normalize("hello barby")
-print(norm)
-index = build_index(DOCUMENTS)
-result = search("", index)
-print(result)
