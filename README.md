@@ -7,6 +7,7 @@
 · app.py: entry point, processing of user input, and output of results.  
 · engine.py: core engine containing the logic for text normalization, index building, and the search algorithm.  
 · storage.py: data storage and query logging functionality.  
+· security.py: user role verification and request throttling
 
 ## Development history:
 · The project was developed as a backend development exercise. 
