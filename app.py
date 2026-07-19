@@ -1,14 +1,14 @@
-from engine import build_index, print_search_report, query_counts, search
+from engine import InvertedIndex, print_search_report, query_counts
 from security import rate_limit, require_role
 from storage import DOCUMENTS, log_query
 
 
 @require_role(required_role="user")
 @rate_limit(max_calls=2, period_seconds=10)
-def handle_search_request(user_input, data_index, DOCUMENTS):
+def handle_search_request(user_input, index_instance, DOCUMENTS):
     documents = dict(DOCUMENTS)
 
-    search_result = search(user_input, data_index)
+    search_result = index_instance.search(user_input)
     counts_result = query_counts(search_result, threshold=50)
 
     print_search_report(user_input, counts_result, documents)
@@ -19,7 +19,9 @@ def handle_search_request(user_input, data_index, DOCUMENTS):
 
 def main():
     documents = dict(DOCUMENTS)
-    data_index = build_index(documents)
+    index_instance = InvertedIndex()
+    index_instance.build_index(documents)
+
     current_user = {"username": "Disha", "role": "user"}
 
     while True:
@@ -32,7 +34,9 @@ def main():
             continue
 
         try:
-            handle_search_request(user_input, data_index, documents, user=current_user)
+            handle_search_request(
+                user_input, index_instance, documents, user=current_user
+            )
         except PermissionError as e:
             print(f"[ACCESS DENIED] {e}")
         except ValueError as e:

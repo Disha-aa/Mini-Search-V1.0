@@ -1,53 +1,89 @@
 import collections as col
 import string
+from pathlib import Path
 
 
-def normalize(text: str) -> str:
-    clean_chars = [
-        char.lower() if char not in string.punctuation else " " for char in text.strip()
-    ]
-    return "".join(clean_chars)
+class TextProcessor:
+    def __init__(self, stop_words: set[str] | None = None):
+        if stop_words is not None:
+            self.stop_words = stop_words
+        else:
+            self.stop_words = self._load_default_stop_words()
+
+    def _load_default_stop_words(self) -> set[str]:
+        stop_words_path = Path(__file__).resolve().parent / "stop_words.txt"
+
+        try:
+            with open(stop_words_path, "r", encoding="utf-8") as f:
+                return set(f.read().split())
+        except FileNotFoundError:
+            return set()
+
+    def normalize(self, text: str) -> str:
+        clean_string = "".join(
+            [
+                char.lower() if char not in string.punctuation else " "
+                for char in text.strip()
+            ]
+        )
+
+        words = clean_string.split()
+        result_text = [word for word in words if word not in self.stop_words]
+
+        return " ".join(result_text)
 
 
-def build_ngrams(word: str, n: int = 3) -> set[str]:
-    if len(word) < n:
-        return {f"_{word}_"}
-    word = f"_{word}_"
-    return {word[i : i + n] for i in range(len(word) - n + 1)}
+class InvertedIndex:
+    def __init__(self):
+        self.processor = TextProcessor()
+        self.index = col.defaultdict(set)
 
+    def build_ngrams(self, word: str, n: int = 3) -> set[str]:
+        if len(word) < n:
+            return {f"_{word}_"}
+        word = f"_{word}_"
 
-def build_index(documents: dict[int, dict], n: int = 3) -> dict[str, set[int]]:
-    index = col.defaultdict(set)
+        return {word[i : i + n] for i in range(len(word) - n + 1)}
 
-    for doc_id, doc_data in documents.items():
-        text = f"{doc_data['title']} {doc_data['content']}"
-        words = normalize(text).split()
-        for word in words:
-            trigrams = build_ngrams(word, n)
-            for trigram in trigrams:
-                index[trigram].add(doc_id)
+    def build_index(
+        self,
+        documents: dict[int, dict],
+        n: int = 3,
+    ) -> dict[str, set[int]]:
 
-    return dict(index)
+        self.index.clear()
 
+        for doc_id, doc_data in documents.items():
+            text = f"{doc_data['title']} {doc_data['content']}"
+            words = self.processor.normalize(text).split()
+            for word in words:
+                trigrams = self.build_ngrams(word, n)
+                for trigram in trigrams:
+                    self.index[trigram].add(doc_id)
 
-def search(query: str, index: dict[str, set[int]], n: int = 3) -> list[dict]:
-    normal_query = normalize(query)
-    if not normal_query.strip():
-        return []
-    query_ngrams = build_ngrams(normal_query, n)
+        return dict(self.index)
 
-    scores = col.defaultdict(int)
-    for tgram in query_ngrams:
-        if tgram in index:
-            for doc_id in index[tgram]:
-                scores[doc_id] += 1
+    def search(self, query: str, n: int = 3) -> list[dict]:
+        normal_query = self.processor.normalize(query)
+        if not normal_query.strip():
+            return []
 
-    score = []
-    for doc_id, doc_score in scores.items():
-        percent_score = doc_score / len(query_ngrams)
-        score.append({"id": doc_id, "score": percent_score})
+        query_ngrams = set()
+        for word in normal_query.split():
+            query_ngrams.update(self.build_ngrams(word, n))
 
-    return sorted(score, key=lambda item: item["score"], reverse=True)
+        scores = col.defaultdict(int)
+        for tgram in query_ngrams:
+            if tgram in self.index:
+                for doc_id in self.index[tgram]:
+                    scores[doc_id] += 1
+
+        score = []
+        for doc_id, doc_score in scores.items():
+            percent_score = doc_score / len(query_ngrams)
+            score.append({"id": doc_id, "score": percent_score})
+
+        return sorted(score, key=lambda item: item["score"], reverse=True)
 
 
 def query_counts(result: list[dict], threshold: int = 50) -> list[dict]:
@@ -57,7 +93,7 @@ def query_counts(result: list[dict], threshold: int = 50) -> list[dict]:
     for item in result:
         score = int((item["score"]) * 100)
         if score > max_score:
-            max_score = score
+            max_score = float(score)
         if score >= threshold:
             filtered_items.append({"id": item["id"], "score": score})
     return {
